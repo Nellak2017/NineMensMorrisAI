@@ -194,6 +194,25 @@ func GenerateAdd(board *MorrisBoard, color int) []*MorrisBoard {
 	return L
 }
 
+// StaticEstimateOpeningNaive computes a static estimate for an opening board state
+// based on the difference between the number of white pieces and black pieces.
+func StaticEstimateOpeningNaive(board *MorrisBoard) int {
+	numWhitePieces, numBlackPieces := 0, 0
+
+	// Count the number of white and black pieces on the board
+	for location := 0; location < 21; location++ {
+		switch board.GetPosition(location) {
+		case White:
+			numWhitePieces++
+		case Black:
+			numBlackPieces++
+		}
+	}
+
+	// Calculate the static estimate for the opening phase
+	return numWhitePieces - numBlackPieces
+}
+
 // --- Main function
 func main() {
 	fmt.Println("\nMorris board initialized from nothing")
@@ -259,4 +278,8 @@ func main() {
 	for i, state := range newStates {
 		fmt.Printf("State %d:\n%s\n", i+1, state.String())
 	}
+
+	fmt.Println("\n ------")
+	fmt.Println("Board 4: " + board4.String())
+	fmt.Println("Static estimate: ", StaticEstimateOpeningNaive(board4))
 }
