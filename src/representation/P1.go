@@ -175,6 +175,25 @@ func GenerateRemove(board *MorrisBoard, L *[]*MorrisBoard) {
 	}
 }
 
+func GenerateAdd(board *MorrisBoard, color int) []*MorrisBoard {
+	L := []*MorrisBoard{}
+
+	for location := 0; location < 21; location++ {
+		if board.GetPosition(location) == Empty {
+			b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf} // Create a copy of the board
+			var close = closeMill(location, b, color)
+			b.SetPosition(location, color) // Place the color token at the specified location
+			if close {
+				GenerateRemove(b, &L) // Generate removal states if placing this piece closes a mill
+			} else {
+				L = append(L, b) // Otherwise, add the board state to the list L
+			}
+		}
+	}
+
+	return L
+}
+
 // --- Main function
 func main() {
 	fmt.Println("\nMorris board initialized from nothing")
@@ -221,5 +240,23 @@ func main() {
 	fmt.Println("\nPossible board states after black piece removal:")
 	for _, b := range removedStates {
 		fmt.Println(b.String())
+	}
+
+	// Test GenerateAdd (moves for opening)
+	boardStr3 := "xxxxxxxxxWxWxxxxBxxxW" // White should be able to close mill (20, 11, 1)
+	board4 := MorrisBoardFromString(boardStr3)
+	if board4 == nil {
+		fmt.Println("Invalid board string")
+		return
+	}
+
+	fmt.Println("GenerateAdd Board: " + board4.String())
+
+	fmt.Println("\nGenerating new board states by adding a white token:")
+	newStates := GenerateAdd(board4, White)
+
+	fmt.Println("\nGenerated Board States:")
+	for i, state := range newStates {
+		fmt.Printf("State %d:\n%s\n", i+1, state.String())
 	}
 }
