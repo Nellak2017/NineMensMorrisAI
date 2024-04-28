@@ -150,6 +150,31 @@ func closeMill(j int, b *MorrisBoard, color int) bool {
 	return false
 }
 
+func GenerateRemove(board *MorrisBoard, L *[]*MorrisBoard) {
+	// Check if removing each black piece does not close a mill, since normally you can only remove a black piece if it is not a mill
+	for location := 0; location < 21; location++ {
+		if board.GetPosition(location) == Black {
+			b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf} // Create a copy of the board
+			b.SetPosition(location, Empty)                                              // Remove the black piece from the specified location
+			if !closeMill(location, b, Black) {                                         // Check if removing this piece does not close a mill
+				*L = append(*L, b) // If it doesn't close a mill, add the resulting board state to the list L
+			}
+		}
+	}
+
+	// If no states were added (all black pieces are in mills), add all possible removal states.
+	// This is because if all pieces are mills then you still remove one
+	if len(*L) == 0 {
+		for location := 0; location < 21; location++ {
+			if board.GetPosition(location) == Black { // Check if the position contains a black piece
+				b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf} // Create a copy of the board
+				b.SetPosition(location, Empty)                                              // Remove the black piece from the specified location
+				*L = append(*L, b)                                                          // Add the resulting board state to the list L
+			}
+		}
+	}
+}
+
 // --- Main function
 func main() {
 	fmt.Println("\nMorris board initialized from nothing")
@@ -181,4 +206,20 @@ func main() {
 	flippedBoard := board2.InvertColors()
 	fmt.Println("\n   board2 again: " + board2.String())
 	fmt.Println("board2 inverted: " + flippedBoard.String())
+
+	// Test GenerateRemove
+	boardStr2 := "xxxxxxxxxWxWxxxxBxxxW" // Example board string
+	board3 := MorrisBoardFromString(boardStr2).InvertColors()
+	if board3 == nil {
+		fmt.Println("Invalid board string")
+		return
+	}
+	var removedStates []*MorrisBoard
+	GenerateRemove(board3, &removedStates)
+
+	fmt.Println("\nBoard used when considering GenerateRemove " + board3.String())
+	fmt.Println("\nPossible board states after black piece removal:")
+	for _, b := range removedStates {
+		fmt.Println(b.String())
+	}
 }
