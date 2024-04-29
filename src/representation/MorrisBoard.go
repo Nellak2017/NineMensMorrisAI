@@ -207,3 +207,165 @@ func StaticEstimateOpeningNaive(board *MorrisBoard) int {
 	// Calculate the static estimate for the opening phase
 	return numWhitePieces - numBlackPieces
 }
+
+func Neighbors(j int) []int {
+	// Define neighbors based on the provided mappings
+	switch j {
+	case 0:
+		return []int{1, 2, 6}
+	case 1:
+		return []int{0, 11}
+	case 2:
+		return []int{0, 4, 7}
+	case 3:
+		return []int{4, 5, 10}
+	case 4:
+		return []int{2, 3, 5, 8}
+	case 5:
+		return []int{3, 4, 9}
+	case 6:
+		return []int{0, 7, 18}
+	case 7:
+		return []int{2, 6, 8, 15}
+	case 8:
+		return []int{4, 7, 12}
+	case 9:
+		return []int{5, 10, 14}
+	case 10:
+		return []int{3, 9, 11, 17}
+	case 11:
+		return []int{1, 10, 20}
+	case 12:
+		return []int{8, 13, 16}
+	case 13:
+		return []int{12, 14, 19}
+	case 14:
+		return []int{9, 13, 15}
+	case 15:
+		return []int{7, 14, 17}
+	case 16:
+		return []int{12, 17, 18}
+	case 17:
+		return []int{10, 15, 16, 19}
+	case 18:
+		return []int{6, 16, 20}
+	case 19:
+		return []int{13, 17, 20}
+	case 20:
+		return []int{11, 18, 19}
+	default:
+		return []int{} // Default empty list for invalid j
+	}
+}
+
+func GenerateMove(board *MorrisBoard, color int) []*MorrisBoard {
+	L := []*MorrisBoard{}
+
+	// Iterate over each location on the board
+	for location := 0; location < 21; location++ {
+		if board.GetPosition(location) == color { // Check if the current position contains a color piece
+			neighbors := Neighbors(location) // Get the neighboring positions of the current location
+
+			// Iterate over each neighbor position
+			for _, j := range neighbors {
+				if board.GetPosition(j) == Empty { // Check if the neighbor position is empty
+					// Create a copy of the board
+					b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf}
+					var close = CloseMill(j, b, color)
+
+					// Move the white piece from 'location' to 'j'
+					b.SetPosition(location, Empty)
+					b.SetPosition(j, color)
+
+					// Check if moving to position 'j' forms a mill
+					if close {
+						GenerateRemove(b, &L) // Generate removal states if a mill is formed
+					} else {
+						L = append(L, b) // Otherwise, add the resulting board state to the list L
+					}
+				}
+			}
+		}
+	}
+
+	return L
+}
+
+func GenerateHopping(board *MorrisBoard, color int) []*MorrisBoard {
+	L := []*MorrisBoard{}
+
+	// Iterate over each location α on the board
+	for alpha := 0; alpha < 21; alpha++ {
+		if board.GetPosition(alpha) == color { // Check if the current position contains a white piece
+			// Iterate over each location β on the board
+			for beta := 0; beta < 21; beta++ {
+				if board.GetPosition(beta) == Empty { // Check if the position β is empty
+					// Create a copy of the board
+					b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf}
+					var close = CloseMill(beta, b, color)
+					// Move the white piece from α to β
+					b.SetPosition(alpha, Empty)
+					b.SetPosition(beta, color)
+
+					// Check if moving to position β forms a mill
+					if close {
+						GenerateRemove(b, &L) // Generate removal states if a mill is formed
+					} else {
+						L = append(L, b) // Otherwise, add the resulting board state to the list L
+					}
+				}
+			}
+		}
+	}
+
+	return L
+}
+
+func GenerateMovesMidgameEndgame(board *MorrisBoard, color int) []*MorrisBoard {
+	numWhitePieces := 0
+
+	// Count the number of white pieces on the board
+	for location := 0; location < 21; location++ {
+		if board.GetPosition(location) == White {
+			numWhitePieces++
+		}
+	}
+
+	if numWhitePieces == 3 {
+		// Generate hopping moves if there are exactly 3 white pieces
+		return GenerateHopping(board, color)
+	}
+
+	// Return an empty list if the number of white pieces is not 3
+	return []*MorrisBoard{}
+}
+
+func StaticEstimateMidgameEndgame(board *MorrisBoard) int {
+	numWhitePieces := 0
+	numBlackPieces := 0
+
+	// Count the number of white and black pieces on the board
+	for location := 0; location < 21; location++ {
+		switch board.GetPosition(location) {
+		case White:
+			numWhitePieces++
+		case Black:
+			numBlackPieces++
+		}
+	}
+
+	// Generate black moves and count the number of resulting board states
+	blackMoves := GenerateMovesMidgameEndgame(board, Black)
+	numBlackMoves := len(blackMoves)
+
+	// Perform static estimation based on the provided pseudo-code
+	if numBlackPieces <= 2 {
+		return 10000 // Favorable for White if Black has 2 or fewer pieces
+	} else if numWhitePieces <= 2 {
+		return -10000 // Favorable for Black if White has 2 or fewer pieces
+	} else if numBlackMoves == 0 {
+		return 10000 // Favorable for White if Black has no valid moves
+	} else {
+		return 1000*(numWhitePieces-numBlackPieces) - numBlackMoves
+	}
+}
