@@ -1,9 +1,4 @@
-package main
-
-import (
-	"fmt"
-	"strconv"
-)
+package representation
 
 // --- Helpers
 func updateHalf(position int, half uint32, state int) uint32 {
@@ -105,8 +100,8 @@ func (b *MorrisBoard) InvertColors() *MorrisBoard {
 	return flippedBoard
 }
 
-// closeMill checks if placing a token at position j closes a mill on the board b
-func closeMill(j int, b *MorrisBoard, color int) bool {
+// CloseMill checks if placing a token at position j closes a mill on the board b
+func CloseMill(j int, b *MorrisBoard, color int) bool {
 	C := b.GetPosition(j) // Color of the token placed at position j (0, 1, 2)
 
 	if C != 0 {
@@ -156,7 +151,7 @@ func GenerateRemove(board *MorrisBoard, L *[]*MorrisBoard) {
 		if board.GetPosition(location) == Black {
 			b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf} // Create a copy of the board
 			b.SetPosition(location, Empty)                                              // Remove the black piece from the specified location
-			if !closeMill(location, b, Black) {                                         // Check if removing this piece does not close a mill
+			if !CloseMill(location, b, Black) {                                         // Check if removing this piece does not close a mill
 				*L = append(*L, b) // If it doesn't close a mill, add the resulting board state to the list L
 			}
 		}
@@ -181,7 +176,7 @@ func GenerateAdd(board *MorrisBoard, color int) []*MorrisBoard {
 	for location := 0; location < 21; location++ {
 		if board.GetPosition(location) == Empty {
 			b := &MorrisBoard{firstHalf: board.firstHalf, secondHalf: board.secondHalf} // Create a copy of the board
-			var close = closeMill(location, b, color)
+			var close = CloseMill(location, b, color)
 			b.SetPosition(location, color) // Place the color token at the specified location
 			if close {
 				GenerateRemove(b, &L) // Generate removal states if placing this piece closes a mill
@@ -211,75 +206,4 @@ func StaticEstimateOpeningNaive(board *MorrisBoard) int {
 
 	// Calculate the static estimate for the opening phase
 	return numWhitePieces - numBlackPieces
-}
-
-// --- Main function
-func main() {
-	fmt.Println("\nMorris board initialized from nothing")
-	var board MorrisBoard        // Using empty MorrisBoard
-	board.SetPosition(0, Empty)  // Set position 0 to 'x'
-	board.SetPosition(1, White)  // Set position 1 to 'W'
-	board.SetPosition(2, Black)  // Set position 2 to 'B'
-	board.SetPosition(3, Unused) // Set position 3 to nothing assigned
-
-	fmt.Println(board.GetPosition(0)) // Get the state of position 0 (White)
-	fmt.Println(board.GetPosition(1)) // Get the state of position 1 (Black)
-	fmt.Println(board.GetPosition(2)) // Get the state of position 2 (Empty)
-	fmt.Println(board.GetPosition(3)) // Get the state of position 3 (Unused)
-
-	fmt.Println("\n" + board.String())
-
-	fmt.Println("\nMorris board initialized from a string")
-	// Create a MorrisBoard from a string representation
-	boardStr := "xxxxxxxxxWxWxxxxBxxxW" // White should be able to close mill (20, 11, 1)
-	board2 := MorrisBoardFromString(boardStr)
-	if board2 == nil {
-		fmt.Println("Invalid board string")
-		return
-	}
-	fmt.Println("\n" + board2.String())
-
-	fmt.Println("\n" + strconv.FormatBool(closeMill(1, board2, White)))
-
-	flippedBoard := board2.InvertColors()
-	fmt.Println("\n   board2 again: " + board2.String())
-	fmt.Println("board2 inverted: " + flippedBoard.String())
-
-	// Test GenerateRemove
-	boardStr2 := "xxxxxxxxxWxWxxxxBxxxW" // Example board string
-	board3 := MorrisBoardFromString(boardStr2).InvertColors()
-	if board3 == nil {
-		fmt.Println("Invalid board string")
-		return
-	}
-	var removedStates []*MorrisBoard
-	GenerateRemove(board3, &removedStates)
-
-	fmt.Println("\nBoard used when considering GenerateRemove " + board3.String())
-	fmt.Println("\nPossible board states after black piece removal:")
-	for _, b := range removedStates {
-		fmt.Println(b.String())
-	}
-
-	// Test GenerateAdd (moves for opening)
-	boardStr3 := "xxxxxxxxxWxWxxxxBxxxW" // White should be able to close mill (20, 11, 1)
-	board4 := MorrisBoardFromString(boardStr3)
-	if board4 == nil {
-		fmt.Println("Invalid board string")
-		return
-	}
-
-	fmt.Println("GenerateAdd Board: " + board4.String())
-
-	fmt.Println("\nGenerating new board states by adding a white token:")
-	newStates := GenerateAdd(board4, White)
-
-	fmt.Println("\nGenerated Board States:")
-	for i, state := range newStates {
-		fmt.Printf("State %d:\n%s\n", i+1, state.String())
-	}
-
-	fmt.Println("\n ------")
-	fmt.Println("Board 4: " + board4.String())
-	fmt.Println("Static estimate: ", StaticEstimateOpeningNaive(board4))
 }
