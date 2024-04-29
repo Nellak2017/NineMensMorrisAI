@@ -56,6 +56,11 @@ func alphaBeta(board *representation.MorrisBoard, player int, depth int, maximiz
 	}
 
 	moves := representation.GenerateAdd(board, player) // Generate possible moves for the current board state
+	// Defensive check: ensure that moves is not nil
+	if moves == nil {
+		return &representation.MorrisBoard{}, nodesEvaluated, bestEstimate
+	}
+
 	for _, move := range moves {
 		_, evaluated, estimate := alphaBeta(move, 3-player, depth-1, !maximizingPlayer, nodesEvaluated) // Recursively call alphaBeta for the opponent player
 		nodesEvaluated = evaluated
@@ -64,12 +69,15 @@ func alphaBeta(board *representation.MorrisBoard, player int, depth int, maximiz
 			bestEstimate, bestBoard = estimate, move // Update the best estimate and board based on maximizing or minimizing player
 		}
 	}
-
+	// Defensive check: ensure that bestBoard is not nil
+	if bestBoard == nil {
+		return &representation.MorrisBoard{}, nodesEvaluated, bestEstimate
+	}
 	return bestBoard, nodesEvaluated, bestEstimate
 }
 
 func MiniMax(board *representation.MorrisBoard, player int, depth int) (*representation.MorrisBoard, int, int) {
-	bestBoard, evaluated, maxEstimate := alphaBeta(board, player, depth, false, 0)
+	bestBoard, evaluated, maxEstimate := alphaBeta(board, player, depth, true, 0)
 	return bestBoard, evaluated, maxEstimate
 }
 
@@ -89,7 +97,7 @@ func MiniMaxOpeningMain() error {
 	}
 
 	// Process the command-line arguments (Debugging only)
-	fmt.Printf("Input file: %s, Output file: %s, Depth: %d\n", file1, file2, depth)
+	// fmt.Printf("Input file: %s, Output file: %s, Depth: %d\n", file1, file2, depth)
 
 	// Read input board file
 	inputBoard, err := os.ReadFile(file1)
@@ -98,7 +106,7 @@ func MiniMaxOpeningMain() error {
 	}
 
 	// Print input board position
-	fmt.Printf("Input board position: %s\n", inputBoard)
+	fmt.Printf("Input position: %s\n", inputBoard)
 
 	// Convert inputBoard from string to board using the method, MorrisBoardFromString
 	board := representation.MorrisBoardFromString(string(inputBoard))

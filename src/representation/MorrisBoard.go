@@ -258,6 +258,8 @@ func Neighbors(j int) []int {
 	}
 }
 
+// --- The below are for Mid/late game
+
 func GenerateMove(board *MorrisBoard, color int) []*MorrisBoard {
 	L := []*MorrisBoard{}
 
@@ -332,12 +334,10 @@ func GenerateMovesMidgameEndgame(board *MorrisBoard, color int) []*MorrisBoard {
 	}
 
 	if numWhitePieces == 3 {
-		// Generate hopping moves if there are exactly 3 white pieces
-		return GenerateHopping(board, color)
+		return GenerateHopping(board, color) // Generate hopping moves if there are exactly 3 white pieces
 	}
+	return GenerateMove(board, color) // Generate regular moves otherwise
 
-	// Return an empty list if the number of white pieces is not 3
-	return []*MorrisBoard{}
 }
 
 func StaticEstimateMidgameEndgame(board *MorrisBoard) int {
